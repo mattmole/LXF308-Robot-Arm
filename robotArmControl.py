@@ -29,35 +29,35 @@ class RobotArmControl():
         return False
     
     
-    # Function to drive the shoulder motor
-    def driveShoulderMotor(self,direction):
-        self.logger.info(f"Switch-on called for shoulder motor, with direction {direction}")
-        motorType="shoulder"
-        self.driveMotor(motorType, direction)
+    # # Function to drive the shoulder motor
+    # def driveShoulderMotor(self,direction):
+    #     self.logger.info(f"Switch-on called for shoulder motor, with direction {direction}")
+    #     motorType="shoulder"
+    #     self.driveMotor(motorType, direction)
     
-    # Function to drive the elbow motor
-    def driveElbowMotor(self,direction):
-        self.logger.info(f"Switch-on called for elbow motor, with direction {direction}")
-        motorType="elbow"
-        self.driveMotor(motorType, direction)
+    # # Function to drive the elbow motor
+    # def driveElbowMotor(self,direction):
+    #     self.logger.info(f"Switch-on called for elbow motor, with direction {direction}")
+    #     motorType="elbow"
+    #     self.driveMotor(motorType, direction)
     
-    # Function to drive the wrist motor
-    def driveWristMotor(self,direction):
-        self.logger.info(f"Switch-on called for wrist motor, with direction {direction}")
-        motorType="wrist"
-        self.driveMotor(motorType, direction)
+    # # Function to drive the wrist motor
+    # def driveWristMotor(self,direction):
+    #     self.logger.info(f"Switch-on called for wrist motor, with direction {direction}")
+    #     motorType="wrist"
+    #     self.driveMotor(motorType, direction)
     
-    # Function to drive the claw motor
-    def driveClawMotor(self,direction):
-        self.logger.info(f"Switch-on called for claw motor, with direction {direction}")
-        motorType="claw"
-        self.driveMotor(motorType, direction) 
+    # # Function to drive the claw motor
+    # def driveClawMotor(self,direction):
+    #     self.logger.info(f"Switch-on called for claw motor, with direction {direction}")
+    #     motorType="claw"
+    #     self.driveMotor(motorType, direction) 
     
-    # Function to drive the rotate motor
-    def driveRotateMotor(self,direction):
-        self.logger.info(f"Switch-on called for rotate motor, with direction {direction}")
-        motorType="rotate"
-        self.driveMotor(motorType, direction)
+    # # Function to drive the rotate motor
+    # def driveRotateMotor(self,direction):
+    #     self.logger.info(f"Switch-on called for rotate motor, with direction {direction}")
+    #     motorType="rotate"
+    #     self.driveMotor(motorType, direction)
         
     # Function to drive a motor, with the type defined by the previous functions
     def driveMotor(self,motorType, direction):
@@ -74,6 +74,15 @@ class RobotArmControl():
                 motor.forward(self.motorSpeed)
             elif direction == "retract" or direction == "right":
                 motor.backward(self.motorSpeed)
+
+    # A function to set the motor speeds
+    def setMotorSpeed(self, motorType):
+        self.logger.info(f"Drive speed function called for {motorType} motor, with speed {self.motorSpeed}")
+        pins = self.pins.pins[motorType]
+        pin1 = pins[1]
+        if self.raspberryPi:
+            motorSpeed = PWMLED(pin1)
+            motorSpeed.value = self.motorSpeed
 
     # A function to stop the motor
     def stopMotor(self,motorType):
@@ -111,7 +120,7 @@ if __name__ == "__main__":
     # Creating an object
     logger = logging.getLogger()
  
-    # Setting the threshold of logger to DEBUG
+    # Setting the threshold of logger to INFO
     logger.setLevel(logging.INFO)
     
     a = RobotArmControl("a","b","c", logger = logger)
