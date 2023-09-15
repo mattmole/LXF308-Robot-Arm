@@ -2,6 +2,8 @@ from PyQt6.QtWidgets import QApplication, QMainWindow, QPushButton, QHBoxLayout,
 from PyQt6.QtGui import QFont
 from PyQt6.QtCore import Qt
 from rich import print
+from robotArmControl import RobotArmControl
+import logging
 
 font = QFont("Arial", 14)
 
@@ -25,8 +27,10 @@ class CustomQComboBox(QComboBox):
         self.setFont(font)
 
 class ConfigWindow(QMainWindow):
-    def __init__(self, pins, windowWidth = 400, windowHeight = 600):
+    def __init__(self, pins, logger, windowWidth = 400, windowHeight = 600):
         super().__init__()
+
+        self.logger = logger
 
         self.pins = pins
 
@@ -164,15 +168,8 @@ class ConfigWindow(QMainWindow):
 
 class MainWindow(QMainWindow):
 
-    def __init__(self, configWindow, pins, windowWidth = 400, windowHeight = 700):
+    def __init__(self, configWindow, pins, logger, windowWidth = 400, windowHeight = 700):
         super().__init__()
-
-        self.configWindow = configWindow
-        self.pins = pins
-
-        # Set the window's title
-        self.setWindowTitle("Robot Arm Controller")
-
 
         # Variables to hold useful values
         self.motorSpeed = 1
@@ -183,6 +180,15 @@ class MainWindow(QMainWindow):
         self.setMaximumWidth(windowWidth)
         self.setMinimumHeight(windowHeight)
         self.setMinimumWidth(windowWidth)
+
+        self.logger = logger
+        self.configWindow = configWindow
+        self.pins = pins
+
+        self.robotArmControl = RobotArmControl(self.pins, self.motorSpeed, self.ledBrightness, self.logger)
+
+        # Set the window's title
+        self.setWindowTitle("Robot Arm Controller")
 
         # Create a vertical layout object to hold other widgets and layouts
         vLayout = QVBoxLayout()
@@ -251,14 +257,15 @@ class MainWindow(QMainWindow):
         ledLabel = CustomQLabel("Light")
         ledButton = CustomQPushButton("On")
         ledButton.setCheckable(True)
-        ledSlider = QSlider(Qt.Orientation.Horizontal)
-        ledSlider.setMinimum(0)
-        ledSlider.setMaximum(255)
-        ledSlider.setValue(255)
+        self.ledSlider = QSlider(Qt.Orientation.Horizontal)
+        self.ledSlider.setMinimum(0)
+        self.ledSlider.setMaximum(255)
+        self.ledSlider.setValue(255)
+        self.ledSlider.setDisabled(True)
 
         ledHLayout = QHBoxLayout()
         ledHLayout.addWidget(ledButton)
-        ledHLayout.addWidget(ledSlider)
+        ledHLayout.addWidget(self.ledSlider)
 
         # Create the layout for the main window
         vLayout.addWidget(speedLabel)
@@ -297,18 +304,21 @@ class MainWindow(QMainWindow):
 
         # Use signals to link all buttons, sliders etc to functions (slots)
         speedSlider.valueChanged.connect(self.setMotorSpeed)
-        ledSlider.valueChanged.connect(self.setLedBrightness)
-        ledSlider.valueChanged.connect(self.sendLedBrightness)
-        leftRotateButton.clicked.connect(lambda x: self.buttonPressed(x,"rl"))
-        rightRotateButton.clicked.connect(lambda x: self.buttonPressed(x,"rr"))
-        extendShoulderButton.clicked.connect(lambda x: self.buttonPressed(x,"es"))
-        retractShoulderButton.clicked.connect(lambda x: self.buttonPressed(x,"rs"))
-        extendElbowButton.clicked.connect(lambda x: self.buttonPressed(x,"ee"))
-        retractElbowButton.clicked.connect(lambda x: self.buttonPressed(x,"re"))
-        extendWristButton.clicked.connect(lambda x: self.buttonPressed(x,"ew"))
-        retractWristButton.clicked.connect(lambda x: self.buttonPressed(x,"rw"))
-        openClawButton.clicked.connect(lambda x: self.buttonPressed(x,"oc"))
-        closeClawButton.clicked.connect(lambda x: self.buttonPressed(x,"cc"))
+        self.ledSlider.valueChanged.connect(self.setLedBrightness)
+        self.ledSlider.valueChanged.connect(self.sendLedBrightness)
+        leftRotateButton.pressed.connect(lambda: self.buttonPressed("rotate","left"))
+        leftRotateButton.released.connect(lambda: self.buttonReleased("rotate","left"))
+        rightRotateButton.pressed.connect(lambda: self.buttonPressed("rotate","right"))
+        rightRotateButton.released.connect(lambda: self.buttonPressed("rotate","right"))
+
+        extendShoulderButton.pressed.connect(lambda: self.buttonPressed("shoulder", "extend"))
+        retractShoulderButton.pressed.connect(lambda: self.buttonPressed("shoulder","retract"))
+        extendElbowButton.pressed.connect(lambda: self.buttonPressed("elbow","extend"))
+        retractElbowButton.pressed.connect(lambda: self.buttonPressed("elbow", "retract"))
+        extendWristButton.pressed.connect(lambda: self.buttonPressed("wrist", "extend"))
+        retractWristButton.pressed.connect(lambda: self.buttonPressed("wrist","retract"))
+        openClawButton.pressed.connect(lambda: self.buttonPressed("claw", open))
+        closeClawButton.pressed.connect(lambda: self.buttonPressed("claw","close"))
         ledButton.toggled.connect(self.ledButtonPressed)
 
     # Slot used when window is closed
@@ -329,33 +339,47 @@ class MainWindow(QMainWindow):
         self.ledBrightness = brightnessValue / 255
 
     # Create a function to handle if a motor control button is pressed
-    def buttonPressed(self,*args):
-        print(args)
+    def buttonPressed(self, motorType, direction):
+        self.robotArmControl.driveMotor(motorType, direction)
+
+    def buttonReleased(self,motorType, direction):
+        self.robotArmControl.stopMotor(motorType)
 
     # Create a function to handle if the LED control button is pressed
     def ledButtonPressed(self, buttonState):
         if buttonState:
             print("Switching on")
+            self.ledSlider.setDisabled(False)
+            self.robotArmControl.controlLedBrightness(self.ledBrightness)
         else:
-            print("Switching off")
+            self.robotArmControl.stopLed()
+            self.ledSlider.setDisabled(True)
 
     # Create a function to send a different brightness value when the LED brightness slider is changed
     def sendLedBrightness(self):
         print(self.ledBrightness)
+        self.robotArmControl.controlLedBrightness(self.ledBrightness)
 
 class CustomQApplication(QApplication):
     def __init__(self,args):
         super().__init__(args)
+        logging.basicConfig(format='%(asctime)s %(message)s')    
+
+        # Creating an object
+        logger = logging.getLogger()
+
+        # Setting the threshold of logger to DEBUG
+        logger.setLevel(logging.INFO)
 
         pins = Pins()
-        configWindow = ConfigWindow(pins=pins)
-        mainWindow = MainWindow(configWindow = configWindow, pins="pins")
+        configWindow = ConfigWindow(pins, logger)
+        mainWindow = MainWindow(configWindow, pins, logger)
 
         self.exec()
 
 
 if __name__ == "__main__":
-
+    
     app = CustomQApplication([])
 
     #app.exec()
