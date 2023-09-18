@@ -24,8 +24,9 @@ class RobotArmControl():
 
             motorTypesList = ["claw","shoulder","elbow","wrist","claw"]
             for motorType in motorTypesList:
-                self.motorObjects[motorType] = Motor(self.pins.pins[motorType][1],self.pins.pins[motorType][2])
-                self.motorSpeedObjects[motorType] = PWMLED(self.pins.pins[motorType][3])
+                if self.pins.pins[motorType][1] != None and self.pins.pins[motorType][2] != None and self.pins.pins[motorType][3] != None:
+                    self.motorObjects[motorType] = Motor(self.pins.pins[motorType][1],self.pins.pins[motorType][2])
+                    self.motorSpeedObjects[motorType] = PWMLED(self.pins.pins[motorType][3])
             self.led = LED(self.pins.pins["led"][1])
 
         if not self.raspberryPi:
