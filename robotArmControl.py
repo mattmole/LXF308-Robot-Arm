@@ -22,7 +22,7 @@ class RobotArmControl():
 
         if self.raspberryPi:
 
-            motorTypesList = ["claw","shoulder","elbow","wrist","claw"]
+            motorTypesList = ["claw","shoulder","elbow","wrist","rotate"]
             for motorType in motorTypesList:
                 if self.pins.pins[motorType][1] != None and self.pins.pins[motorType][2] != None and self.pins.pins[motorType][3] != None:
                     self.motorObjects[motorType] = Motor(self.pins.pins[motorType][1],self.pins.pins[motorType][2])
@@ -73,8 +73,7 @@ class RobotArmControl():
             motor.stop()
         
     # A function to control the brightness of the LED
-    def controlLedBrightness(self, ledBrightness):
-        self.ledBrightness = ledBrightness
+    def controlLedBrightness(self):
         self.logger.info(f"Control LED function called for LED, with brightness {self.ledBrightness}")
         
         if self.raspberryPi:
@@ -123,5 +122,16 @@ if __name__ == "__main__":
         elif char == "3":
             a.motorSpeed = 0.9999
             a.setMotorSpeed("claw")
+        elif char == "4":
+            a.ledBrightness = 0.3333
+            a.controlLedBrightness()
+        elif char == "5":
+            a.ledBrightness = 0.6666
+            a.controlLedBrightness()
+        elif char == "6":
+            a.ledBrightness = 0.9999
+            a.controlLedBrightness()
+        elif char == "o":
+            a.stopLed()
         elif char == "q":
             sys.exit()
