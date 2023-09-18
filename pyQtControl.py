@@ -256,7 +256,7 @@ class MainWindow(QMainWindow):
         self.configWindow = configWindow
         self.pins = pins
 
-        self.robotArmControl = RobotArmControl(self.pins, self.motorSpeed, self.ledBrightness, self.logger)
+        self.robotArmControl = RobotArmControl(self.pins, self.motorSpeed, self.ledBrightness, self.logger, remote=True)
 
         # Set the window's title
         self.setWindowTitle("Robot Arm Controller")
@@ -416,11 +416,12 @@ class MainWindow(QMainWindow):
     # Create a function to set the LED brightness variable
     def setLedBrightness(self, brightnessValue):
         self.ledBrightness = brightnessValue / 255
+        self.robotArmControl.ledBrightness = self.ledBrightness
 
     # Create a function to handle if a motor control button is pressed
     def buttonPressed(self, motorType, direction):
         self.robotArmControl.motorSpeed = self.motorSpeed
-        self.robotArmControl.setMotorSpeed(motorType)
+        #self.robotArmControl.setMotorSpeed(motorType)
         self.robotArmControl.driveMotor(motorType, direction)
 
     def buttonReleased(self,motorType, direction):
@@ -430,14 +431,14 @@ class MainWindow(QMainWindow):
     def ledButtonPressed(self, buttonState):
         if buttonState:
             self.ledSlider.setDisabled(False)
-            self.robotArmControl.controlLedBrightness(self.ledBrightness)
+            self.robotArmControl.controlLedBrightness()
         else:
             self.robotArmControl.stopLed()
             self.ledSlider.setDisabled(True)
 
     # Create a function to send a different brightness value when the LED brightness slider is changed
     def sendLedBrightness(self):
-        self.robotArmControl.controlLedBrightness(self.ledBrightness)
+        self.robotArmControl.controlLedBrightness()
 
 class CustomQApplication(QApplication):
     def __init__(self,args):

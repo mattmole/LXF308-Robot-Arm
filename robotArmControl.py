@@ -1,4 +1,5 @@
-from gpiozero import Device, PWMLED, LED, Motor
+from gpiozero import Device, PWMLED, Motor
+from gpiozero.pins.pigpio import PiGPIOFactory
 import logging
 import sys
 
@@ -9,9 +10,16 @@ class Pins():
 class RobotArmControl():
 
     # Initialise the class and set some instance variables
-    def __init__(self,pins,motorSpeed,ledBrightness, logger):
+    def __init__(self,pins,motorSpeed,ledBrightness, logger, remote=False, remoteIP = "192.168.1.61"):
         self.logger = logger
         self.raspberryPi = self.isRaspberryPi()
+
+        self.remote = remote
+        self.remoteIP = remoteIP
+
+        self.factory = PiGPIOFactory(host=self.remoteIP)
+        if self.remote:
+            Device.pin_factory = self.factory
 
         self.pins = pins
         self.motorSpeed = motorSpeed
@@ -20,15 +28,16 @@ class RobotArmControl():
         self.motorObjects = {}
         self.motorSpeedObjects = {}
 
-        if self.raspberryPi:
+        print("Remote: ", self.remote)
+        if self.raspberryPi or self.remote == True:
 
             motorTypesList = ["claw","shoulder","elbow","wrist","rotate"]
             for motorType in motorTypesList:
                 if self.pins.pins[motorType][1] != None and self.pins.pins[motorType][2] != None and self.pins.pins[motorType][3] != None:
-                    self.motorObjects[motorType] = Motor(self.pins.pins[motorType][1],self.pins.pins[motorType][2])
-                    self.motorSpeedObjects[motorType] = PWMLED(self.pins.pins[motorType][3])
-            self.led = LED(self.pins.pins["led"][1])
-
+                    self.motorObjects[motorType] = Motor(self.pins.pins[motorType][1],self.pins.pins[motorType][2],pwm=True,enable=self.pins.pins[motorType][3])
+                    #self.motorSpeedObjects[motorType] = PWMLED(self.pins.pins[motorType][3])
+            
+            self.led = PWMLED(self.pins.pins["led"][1])
         if not self.raspberryPi:
             self.logger.info("You are not running on a Raspberry Pi. Real hardware interaction will be disabled")
         else:
@@ -49,7 +58,7 @@ class RobotArmControl():
     def driveMotor(self,motorType, direction):
         self.logger.info(f"Drive motor function called for {motorType} motor, with direction {direction}")
 
-        if self.raspberryPi:
+        if self.raspberryPi or self.remote:
             motor = self.motorObjects[motorType]
         
             # The direction is controlled by a function argument
@@ -59,16 +68,18 @@ class RobotArmControl():
                 motor.backward(self.motorSpeed)
 
     # A function to set the motor speeds
-    def setMotorSpeed(self, motorType):
-        self.logger.info(f"Drive speed function called for {motorType} motor, with speed {self.motorSpeed}")
-        if self.raspberryPi:
-            motorSpeed = self.motorSpeedObjects[motorType]
-            motorSpeed.value = self.motorSpeed
+#    def setMotorSpeed(self, motorType):
+#        self.logger.info(f"Drive speed function called for {motorType} motor, with speed {self.motorSpeed}")
+#f
+#         if self.raspberryPi:
+#            motorSpeed = self.motorSpeedObjects[motorType]
+#            motorSpeed.value = self.motorSpeed
 
+#            self.motorSpeed
     # A function to stop the motor
     def stopMotor(self,motorType):
         self.logger.info(f"Stop motor function called for {motorType} motor")
-        if self.raspberryPi:
+        if self.raspberryPi or self.remote:
             motor = self.motorObjects[motorType]
             motor.stop()
         
@@ -76,7 +87,7 @@ class RobotArmControl():
     def controlLedBrightness(self):
         self.logger.info(f"Control LED function called for LED, with brightness {self.ledBrightness}")
         
-        if self.raspberryPi:
+        if self.raspberryPi or self.remote:
             if not self.led.is_active:
                 self.led.on()
             self.led.value = self.ledBrightness
@@ -84,7 +95,7 @@ class RobotArmControl():
     # A function to switch off the LED
     def stopLed(self):
         self.logger.info("Stop LED function called")
-        if self.raspberryPi:
+        if self.raspberryPi or self.remote:
             self.led.off()
     
 if __name__ == "__main__":
@@ -102,7 +113,7 @@ if __name__ == "__main__":
     # Setting the threshold of logger to INFO
     logger.setLevel(logging.INFO)
     
-    a = RobotArmControl(pins,1,1, logger = logger)
+    a = RobotArmControl(pins,1,1, logger = logger, remote=True)
 
     while 1:
         char = input()
@@ -115,13 +126,10 @@ if __name__ == "__main__":
             a.stopMotor("claw")
         elif char == "1":
             a.motorSpeed = 0.3333
-            a.setMotorSpeed("claw")
         elif char == "2":
             a.motorSpeed = 0.6666
-            a.setMotorSpeed("claw")
         elif char == "3":
             a.motorSpeed = 0.9999
-            a.setMotorSpeed("claw")
         elif char == "4":
             a.ledBrightness = 0.3333
             a.controlLedBrightness()
