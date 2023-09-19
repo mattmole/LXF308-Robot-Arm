@@ -5,7 +5,7 @@ import sys
 
 class Pins():
     def __init__(self):
-        self.pins = {"rotate":{1:None, 2:None, 3:None}, "shoulder":{1:None, 2:None, 3:None}, "elbow":{1:None, 2:None, 3:None}, "wrist":{1:None, 2:None, 3:None}, "claw":{1:None, 2:None, 3:None}, "led":{1:None}}
+        self.pins = {"rotate":{1:None, 2:None, 3:None, "enable":None}, "shoulder":{1:None, 2:None, 3:None, "enable":None}, "elbow":{1:None, 2:None, 3:None, "enable":None}, "wrist":{1:None, 2:None, 3:None, "enable":None}, "claw":{1:None, 2:None, 3:None, "enable":None}, "led":{1:None, "enable":None}}
 
 class RobotArmControl():
 
@@ -27,17 +27,17 @@ class RobotArmControl():
 
         self.motorObjects = {}
         self.motorSpeedObjects = {}
+        self.led = None
 
         print("Remote: ", self.remote)
         if self.raspberryPi or self.remote == True:
 
             motorTypesList = ["claw","shoulder","elbow","wrist","rotate"]
             for motorType in motorTypesList:
-                if self.pins.pins[motorType][1] != None and self.pins.pins[motorType][2] != None and self.pins.pins[motorType][3] != None:
+                if self.pins.pins[motorType]["enable"] and self.pins.pins[motorType][1] != None and self.pins.pins[motorType][2] != None and self.pins.pins[motorType][3] != None:
                     self.motorObjects[motorType] = Motor(self.pins.pins[motorType][1],self.pins.pins[motorType][2],pwm=True,enable=self.pins.pins[motorType][3])
-                    #self.motorSpeedObjects[motorType] = PWMLED(self.pins.pins[motorType][3])
-            
-            self.led = PWMLED(self.pins.pins["led"][1])
+            if self.pins.pins["led"]["enable"]:           
+                self.led = PWMLED(self.pins.pins["led"][1])
         if not self.raspberryPi:
             self.logger.info("You are not running on a Raspberry Pi. Real hardware interaction will be disabled")
         else:
@@ -58,7 +58,7 @@ class RobotArmControl():
     def driveMotor(self,motorType, direction):
         self.logger.info(f"Drive motor function called for {motorType} motor, with direction {direction}")
 
-        if self.raspberryPi or self.remote:
+        if (self.raspberryPi or self.remote) and self.pins.pins[motorType]["enable"]:
             motor = self.motorObjects[motorType]
         
             # The direction is controlled by a function argument
@@ -66,6 +66,8 @@ class RobotArmControl():
                 motor.forward(self.motorSpeed)
             elif direction == "retract" or direction == "right":
                 motor.backward(self.motorSpeed)
+        elif not self.pins.pins[motorType]["enable"]:
+            self.logger.info("Motor was not enabled")
 
     # A function to set the motor speeds
 #    def setMotorSpeed(self, motorType):
@@ -79,15 +81,17 @@ class RobotArmControl():
     # A function to stop the motor
     def stopMotor(self,motorType):
         self.logger.info(f"Stop motor function called for {motorType} motor")
-        if self.raspberryPi or self.remote:
+        if (self.raspberryPi or self.remote) and self.pins.pins[motorType]["enable"]:
             motor = self.motorObjects[motorType]
             motor.stop()
+        elif not self.pins.pins[motorType]["enable"]:
+            self.logger.info("Motor not enabled")
         
     # A function to control the brightness of the LED
     def controlLedBrightness(self):
         self.logger.info(f"Control LED function called for LED, with brightness {self.ledBrightness}")
         
-        if self.raspberryPi or self.remote:
+        if (self.raspberryPi or self.remote) and self.pins.pins["led"]["enable"]:
             if not self.led.is_active:
                 self.led.on()
             self.led.value = self.ledBrightness
@@ -95,17 +99,19 @@ class RobotArmControl():
     # A function to switch off the LED
     def stopLed(self):
         self.logger.info("Stop LED function called")
-        if self.raspberryPi or self.remote:
+        if (self.raspberryPi or self.remote) and self.pins.pins["led"]["enable"]:
             self.led.off()
     
 if __name__ == "__main__":
     logging.basicConfig(format='%(asctime)s %(message)s')    
     
     pins = Pins()
-    pins.pins["led"][1] = 17
-    pins.pins["claw"][1] = 2
-    pins.pins["claw"][2] = 3
-    pins.pins["claw"][3] = 4
+    pins.pins["led"][1] = "GPIO17"
+    pins.pins["led"]["enable"] = True
+    pins.pins["claw"][1] = "GPIO2"
+    pins.pins["claw"][2] = "GPIO3"
+    pins.pins["claw"][3] = "GPIO4"
+    pins.pins["claw"]["enable"] = True
 
     # Creating an object
     logger = logging.getLogger()
@@ -119,9 +125,9 @@ if __name__ == "__main__":
         char = input()
 
         if char == "f":
-            a.driveMotor("claw","extend")
-        elif char == "b":
             a.driveMotor("claw","retract")
+        elif char == "b":
+            a.driveMotor("claw","extend")
         elif char == "s":
             a.stopMotor("claw")
         elif char == "1":

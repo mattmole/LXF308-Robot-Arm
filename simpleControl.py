@@ -1,15 +1,22 @@
-from gpiozero import Button, LED, PWMLED
+from gpiozero import Button, LED, PWMLED, Motor, Device
 from gpiozero.pins.pigpio import PiGPIOFactory
 from signal import pause
 import time
 
 factory = PiGPIOFactory(host='192.168.1.61')
-led = PWMLED(17, pin_factory=factory)
+Device.pin_factory = factory
+led = PWMLED("GPIO17")
+motor = Motor("GPIO2", "GPIO3", enable="GPIO4")
 while 1:
-    led.on()
+    try:
+        led.on()
 
-    time.sleep(1)
+        time.sleep(1)
+        motor.forward(0.5)
 
-    led.off()
+        led.off()
 
-    time.sleep(1)
+        time.sleep(1)
+        motor.backward(0.5)
+    except:
+        motor.stop()

@@ -1,4 +1,4 @@
-from PyQt6.QtWidgets import QApplication, QMainWindow, QPushButton, QHBoxLayout, QVBoxLayout, QWidget, QLabel, QMenu, QSlider, QComboBox
+from PyQt6.QtWidgets import QApplication, QMainWindow, QPushButton, QHBoxLayout, QVBoxLayout, QWidget, QLabel, QMenu, QSlider, QComboBox, QScrollArea, QLineEdit, QCheckBox
 from PyQt6.QtGui import QFont
 from PyQt6.QtCore import Qt
 from rich import print
@@ -9,7 +9,17 @@ font = QFont("Arial", 14)
 
 class Pins():
     def __init__(self):
-        self.pins = {"rotate":{1:None, 2:None, 3:None}, "shoulder":{1:None, 2:None, 3:None}, "elbow":{1:None, 2:None, 3:None}, "wrist":{1:None, 2:None, 3:None}, "claw":{1:None, 2:None, 3:None}, "led":{1:None}}
+        self.pins = {"rotate":{1:None, 2:None, 3:None, "enable":None}, "shoulder":{1:None, 2:None, 3:None, "enable":None}, "elbow":{1:None, 2:None, 3:None, "enable":None}, "wrist":{1:None, 2:None, 3:None, "enable":None}, "claw":{1:None, 2:None, 3:None, "enable":None}, "led":{1:None, "enable":None}}
+
+class CustomQCheckBox(QCheckBox):
+    def __init__(self,text, font=font):
+        super().__init__(text)
+        self.setFont(font)
+
+class CustomQLineEdit(QLineEdit):
+    def __init__(self, text, font = font):
+        super().__init__(text)
+        self.setFont(font)
 
 class CustomQLabel(QLabel):
     def __init__(self,text,font = font):
@@ -26,8 +36,8 @@ class CustomQComboBox(QComboBox):
         super().__init__()
         self.setFont(font)
 
-class ConfigWindow(QMainWindow):
-    def __init__(self, pins, logger, windowWidth = 400, windowHeight = 800):
+class ConfigWindow(QScrollArea):
+    def __init__(self, pins, logger, windowWidth = 450, windowHeight = 600):
         super().__init__()
 
         self.logger = logger
@@ -35,8 +45,6 @@ class ConfigWindow(QMainWindow):
         self.pins = pins
 
         #Set the window sizes
-        self.setMaximumHeight(windowHeight)
-        self.setMaximumWidth(windowWidth)
         self.setMinimumHeight(windowHeight)
         self.setMinimumWidth(windowWidth)
 
@@ -47,16 +55,18 @@ class ConfigWindow(QMainWindow):
         spacerLabel = CustomQLabel("")
 
         # Valid pins for GPIO can be added to the combo box
-        pinChoices = [3,5,7,8,10,11,12,13,15,16,18,19,21,22,23,24,26,27,28,29,31,32,33,35,36,37,38,40]
+        pinChoices = ["GPIO2","GPIO3","GPIO4","GPIO14","GPIO15","GPIO17","GPIO18","GPIO27","GPIO22","GPIO23","GPIO24","GPIO10","GPIO9","GPIO25","GPIO11","GPIO8","GPIO7","GPIO0","GPIO1","GPIO5","GPIO6","GPIO12","GPIO13","GPIO19","GPIO16","GPIO26","GPIO20","GPIO21"]
         pinChoicesStr = []
         for pin in pinChoices:
             pinChoicesStr.append(str(pin))
 
         # Objects for defining shoulder motor pins
         shoulderPinsLabel = CustomQLabel("Define pins used for the shoulder motor")
+        shoulderEnableLabel = CustomQLabel("Enable")
         shoulderPin1Label = CustomQLabel("Pin 1")
         shoulderPin2Label = CustomQLabel("Pin 2")
         shoulderPin3Label = CustomQLabel("Speed")
+        shoulderEnableCheck = CustomQCheckBox("")
         shoulderPin1Combo = CustomQComboBox()
         shoulderPin1Combo.addItems(pinChoicesStr)
         shoulderPin2Combo = CustomQComboBox()
@@ -64,24 +74,30 @@ class ConfigWindow(QMainWindow):
         shoulderPin3Combo = CustomQComboBox()
         shoulderPin3Combo.addItems(pinChoicesStr)
         shoulderHLayout = QHBoxLayout()
+        shVLayout0 = QVBoxLayout()
         shVLayout1 = QVBoxLayout()
         shVLayout2 = QVBoxLayout()
         shVLayout3 = QVBoxLayout()
+        shVLayout0.addWidget(shoulderEnableLabel)
+        shVLayout0.addWidget(shoulderEnableCheck)
         shVLayout1.addWidget(shoulderPin1Label)
         shVLayout1.addWidget(shoulderPin1Combo)
         shVLayout2.addWidget(shoulderPin2Label)
         shVLayout2.addWidget(shoulderPin2Combo)
         shVLayout3.addWidget(shoulderPin3Label)
         shVLayout3.addWidget(shoulderPin3Combo)
+        shoulderHLayout.addLayout(shVLayout0)
         shoulderHLayout.addLayout(shVLayout1)
         shoulderHLayout.addLayout(shVLayout2)
         shoulderHLayout.addLayout(shVLayout3)
 
         # Objects for defining elbow motor pins
         elbowPinsLabel = CustomQLabel("Define pins used for the elbow motor")
+        elbowEnableLabel = CustomQLabel("Enable")
         elbowPin1Label = CustomQLabel("Pin 1")
         elbowPin2Label = CustomQLabel("Pin 2")
         elbowPin3Label = CustomQLabel("Speed")
+        elbowEnableCheck = CustomQCheckBox("")
         elbowPin1Combo = CustomQComboBox()
         elbowPin1Combo.addItems(pinChoicesStr)
         elbowPin2Combo = CustomQComboBox()
@@ -89,24 +105,30 @@ class ConfigWindow(QMainWindow):
         elbowPin3Combo = CustomQComboBox()
         elbowPin3Combo.addItems(pinChoicesStr)
         elbowHLayout = QHBoxLayout()
+        elVLayout0 = QVBoxLayout()
         elVLayout1 = QVBoxLayout()
         elVLayout2 = QVBoxLayout()
         elVLayout3 = QVBoxLayout()
+        elVLayout0.addWidget(elbowEnableLabel)
+        elVLayout0.addWidget(elbowEnableCheck)
         elVLayout1.addWidget(elbowPin1Label)
         elVLayout1.addWidget(elbowPin1Combo)
         elVLayout2.addWidget(elbowPin2Label)
         elVLayout2.addWidget(elbowPin2Combo)
         elVLayout3.addWidget(elbowPin3Label)
         elVLayout3.addWidget(elbowPin3Combo)
+        elbowHLayout.addLayout(elVLayout0)
         elbowHLayout.addLayout(elVLayout1)
         elbowHLayout.addLayout(elVLayout2)
         elbowHLayout.addLayout(elVLayout3)
 
         # Objects for defining wrist motor pins
         wristPinsLabel = CustomQLabel("Define pins used for the wrist motor")
+        wristEnableLabel = CustomQLabel("Enable")
         wristPin1Label = CustomQLabel("Pin 1")
         wristPin2Label = CustomQLabel("Pin 2")
         wristPin3Label = CustomQLabel("Speed")
+        wristEnableCheck = CustomQCheckBox("")
         wristPin1Combo = CustomQComboBox()
         wristPin1Combo.addItems(pinChoicesStr)
         wristPin2Combo = CustomQComboBox()
@@ -114,24 +136,30 @@ class ConfigWindow(QMainWindow):
         wristPin3Combo = CustomQComboBox()
         wristPin3Combo.addItems(pinChoicesStr)
         wristHLayout = QHBoxLayout()
+        wrVLayout0 = QVBoxLayout()
         wrVLayout1 = QVBoxLayout()
         wrVLayout2 = QVBoxLayout()
         wrVLayout3 = QVBoxLayout()
+        wrVLayout0.addWidget(wristEnableLabel)
+        wrVLayout0.addWidget(wristEnableCheck)
         wrVLayout1.addWidget(wristPin1Label)
         wrVLayout1.addWidget(wristPin1Combo)
         wrVLayout2.addWidget(wristPin2Label)
         wrVLayout2.addWidget(wristPin2Combo)
         wrVLayout3.addWidget(wristPin3Label)
         wrVLayout3.addWidget(wristPin3Combo)
+        wristHLayout.addLayout(wrVLayout0)
         wristHLayout.addLayout(wrVLayout1)
         wristHLayout.addLayout(wrVLayout2)
         wristHLayout.addLayout(wrVLayout3)
 
         # Objects for defining claw motor pins
         clawPinsLabel = CustomQLabel("Define pins used for the claw motor")
+        clawEnableLabel = CustomQLabel("Enable")
         clawPin1Label = CustomQLabel("Pin 1")
         clawPin2Label = CustomQLabel("Pin 2")
         clawPin3Label = CustomQLabel("Speed")
+        clawEnableCheck = CustomQCheckBox("")
         clawPin1Combo = CustomQComboBox()
         clawPin1Combo.addItems(pinChoicesStr)
         clawPin2Combo = CustomQComboBox()
@@ -139,15 +167,19 @@ class ConfigWindow(QMainWindow):
         clawPin3Combo = CustomQComboBox()
         clawPin3Combo.addItems(pinChoicesStr)
         clawHLayout = QHBoxLayout()
+        clawVLayout0 = QVBoxLayout()
         clawVLayout1 = QVBoxLayout()
         clawVLayout2 = QVBoxLayout()
         clawVLayout3 = QVBoxLayout()
+        clawVLayout0.addWidget(clawEnableLabel)
+        clawVLayout0.addWidget(clawEnableCheck)        
         clawVLayout1.addWidget(clawPin1Label)
         clawVLayout1.addWidget(clawPin1Combo)
         clawVLayout2.addWidget(clawPin2Label)
         clawVLayout2.addWidget(clawPin2Combo)
         clawVLayout3.addWidget(clawPin3Label)
         clawVLayout3.addWidget(clawPin3Combo)
+        clawHLayout.addLayout(clawVLayout0)
         clawHLayout.addLayout(clawVLayout1)
         clawHLayout.addLayout(clawVLayout2)
         clawHLayout.addLayout(clawVLayout3)
@@ -155,9 +187,11 @@ class ConfigWindow(QMainWindow):
 
         # Objects for defining rotate motor pins
         rotatePinsLabel = CustomQLabel("Define pins used for the rotate motor")
+        rotateEnableLabel = CustomQLabel("Enable")
         rotatePin1Label = CustomQLabel("Pin 1")
         rotatePin2Label = CustomQLabel("Pin 2")
         rotatePin3Label = CustomQLabel("Speed")
+        rotateEnableCheck = CustomQCheckBox("")
         rotatePin1Combo = CustomQComboBox()
         rotatePin1Combo.addItems(pinChoicesStr)
         rotatePin2Combo = CustomQComboBox()
@@ -165,26 +199,58 @@ class ConfigWindow(QMainWindow):
         rotatePin3Combo = CustomQComboBox()
         rotatePin3Combo.addItems(pinChoicesStr)
         rotateHLayout = QHBoxLayout()
+        rotateVLayout0 = QVBoxLayout()
         rotateVLayout1 = QVBoxLayout()
         rotateVLayout2 = QVBoxLayout()
         rotateVLayout3 = QVBoxLayout()
+        rotateVLayout0.addWidget(rotateEnableLabel)
+        rotateVLayout0.addWidget(rotateEnableCheck)        
         rotateVLayout1.addWidget(rotatePin1Label)
         rotateVLayout1.addWidget(rotatePin1Combo)
         rotateVLayout2.addWidget(rotatePin2Label)
         rotateVLayout2.addWidget(rotatePin2Combo)
         rotateVLayout3.addWidget(rotatePin3Label)
         rotateVLayout3.addWidget(rotatePin3Combo)
+        rotateHLayout.addLayout(rotateVLayout0)
         rotateHLayout.addLayout(rotateVLayout1)
         rotateHLayout.addLayout(rotateVLayout2)
         rotateHLayout.addLayout(rotateVLayout3)
 
         # Objects for defining LED pins
+        ledLabel = CustomQLabel("LED Settings")
         ledPinLabel = CustomQLabel("Define pin used for the LED")
+        ledEnableLabel = CustomQLabel("Enable")
         ledPinCombo = CustomQComboBox()
         ledPinCombo.addItems(pinChoicesStr)
+        ledEnableCheck = CustomQCheckBox("")
         ledHLayout = QHBoxLayout()
-        ledHLayout.addWidget(ledPinCombo)
-        ledHLayout.addWidget(spacerLabel)
+        ledVLayout1 = QVBoxLayout()
+        ledVLayout2 = QVBoxLayout()
+        ledVLayout1.addWidget(ledEnableLabel)
+        ledVLayout1.addWidget(ledEnableCheck)
+        ledVLayout2.addWidget(ledPinLabel)
+        ledVLayout2.addWidget(ledPinCombo)
+        ledHLayout.addLayout(ledVLayout1)
+        ledHLayout.addLayout(ledVLayout2)
+
+        # Objects for determining whether to use remote GPIO
+        remoteGPIOLabel = CustomQLabel("Define whether to use Remote GPIO or not")
+        remoteGPIOEnableLabel = CustomQLabel("Enable remote GPIO?")
+        remoteGPIOIPLabel = CustomQLabel("Enter server IP Address")
+        remoteGPIOEnableCombo = CustomQComboBox()
+        remoteGPIOEnableCombo.addItems(["Yes","No"])
+        remoteGPIOIP = CustomQLineEdit("")
+        remoteEnableVLayout = QVBoxLayout()
+        remoteIPVLayout = QVBoxLayout()
+        remoteEnableVLayout.addWidget(remoteGPIOEnableLabel)
+        remoteEnableVLayout.addWidget(remoteGPIOEnableCombo)
+        remoteIPVLayout.addWidget(remoteGPIOIPLabel)
+        remoteIPVLayout.addWidget(remoteGPIOIP)
+        remoteHLayout = QHBoxLayout()
+        remoteHLayout.addLayout(remoteEnableVLayout)
+        remoteHLayout.addLayout(remoteIPVLayout)
+
+        setupGPIOButton = CustomQPushButton("Setup GPIO")
 
         vLayout = QVBoxLayout()
         vLayout.addWidget(rotatePinsLabel)
@@ -202,8 +268,13 @@ class ConfigWindow(QMainWindow):
         vLayout.addWidget(clawPinsLabel)
         vLayout.addLayout(clawHLayout)
         vLayout.addWidget(spacerLabel)
-        vLayout.addWidget(ledPinLabel)
+        vLayout.addWidget(ledLabel)
         vLayout.addLayout(ledHLayout)
+        vLayout.addWidget(spacerLabel)
+        vLayout.addWidget(remoteGPIOLabel)
+        vLayout.addLayout(remoteHLayout)
+        vLayout.addWidget(spacerLabel)
+        vLayout.addWidget(setupGPIOButton)
 
         # Set the pins in the pin object to the original value
         for pinType in self.pins.pins:
@@ -228,14 +299,30 @@ class ConfigWindow(QMainWindow):
         clawPin3Combo.textActivated.connect(lambda x: self.setPinValue(x,"claw",3))
         ledPinCombo.textActivated.connect(lambda x: self.setPinValue(x,"led",1))
 
+        shoulderEnableCheck.stateChanged.connect(lambda x: self.setEnableState(x,"shoulder"))
+        elbowEnableCheck.stateChanged.connect(lambda x: self.setEnableState(x,"elbow"))
+        wristEnableCheck.stateChanged.connect(lambda x: self.setEnableState(x,"wrist"))
+        clawEnableCheck.stateChanged.connect(lambda x: self.setEnableState(x,"claw"))
+        rotateEnableCheck.stateChanged.connect(lambda x: self.setEnableState(x,"rotate"))
+        ledEnableCheck.stateChanged.connect(lambda x: self.setEnableState(x,"led"))
+
+        setupGPIOButton.clicked.connect(self.setupGPIO)
+
         # Create a widget, define the vLayout to it and then assign the widget to be the main widget of the main window
         widget = QWidget()
+        #self.setWidgetResizable(True)        
         widget.setLayout(vLayout)
-        self.setCentralWidget(widget)
-
+        self.setWidget(widget)
+        
     #Set the pin values in the pins object when the combo boxes are used
     def setPinValue(self, arg, pinType, pinNumber):
-        self.pins.pins[pinType][pinNumber] = int(arg)
+        self.pins.pins[pinType][pinNumber] = arg
+
+    def setEnableState(self,state, motorType):
+        self.pins.pins[motorType]["enable"] = state
+
+    def setupGPIO(self):
+        print("Setup GPIO")
 
 class MainWindow(QMainWindow):
 
@@ -256,7 +343,7 @@ class MainWindow(QMainWindow):
         self.configWindow = configWindow
         self.pins = pins
 
-        self.robotArmControl = RobotArmControl(self.pins, self.motorSpeed, self.ledBrightness, self.logger, remote=True)
+        #self.robotArmControl = RobotArmControl(self.pins, self.motorSpeed, self.ledBrightness, self.logger, remote=True)
 
         # Set the window's title
         self.setWindowTitle("Robot Arm Controller")
