@@ -53,7 +53,6 @@ class RobotArmControl():
             pass
         return False
     
-
     # Function to drive a motor, with the type defined by the previous functions
     def driveMotor(self,motorType, direction):
         self.logger.info(f"Drive motor function called for {motorType} motor, with direction {direction}")
@@ -69,15 +68,6 @@ class RobotArmControl():
         elif not self.pins.pins[motorType]["enable"]:
             self.logger.info("Motor was not enabled")
 
-    # A function to set the motor speeds
-#    def setMotorSpeed(self, motorType):
-#        self.logger.info(f"Drive speed function called for {motorType} motor, with speed {self.motorSpeed}")
-#f
-#         if self.raspberryPi:
-#            motorSpeed = self.motorSpeedObjects[motorType]
-#            motorSpeed.value = self.motorSpeed
-
-#            self.motorSpeed
     # A function to stop the motor
     def stopMotor(self,motorType):
         self.logger.info(f"Stop motor function called for {motorType} motor")
@@ -101,7 +91,15 @@ class RobotArmControl():
         self.logger.info("Stop LED function called")
         if (self.raspberryPi or self.remote) and self.pins.pins["led"]["enable"]:
             self.led.off()
-    
+
+    def closeGPIO(self):
+        for motorType in self.pins.pins:
+            if self.pins.pins[motorType]["enable"]:
+                if motorType in self.motorObjects:
+                    self.motorObjects[motorType].close()
+            if self.pins.pins["led"]["enable"]:
+                self.led.close()
+
 if __name__ == "__main__":
     logging.basicConfig(format='%(asctime)s %(message)s')    
     
@@ -148,4 +146,5 @@ if __name__ == "__main__":
         elif char == "o":
             a.stopLed()
         elif char == "q":
+            a.closeGPIO()
             sys.exit()
