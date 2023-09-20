@@ -9,7 +9,7 @@ font = QFont("Arial", 14)
 
 class Pins():
     def __init__(self):
-        self.pins = {"rotate":{1:None, 2:None, 3:None, "enable":None}, "shoulder":{1:None, 2:None, 3:None, "enable":None}, "elbow":{1:None, 2:None, 3:None, "enable":None}, "wrist":{1:None, 2:None, 3:None, "enable":None}, "claw":{1:None, 2:None, 3:None, "enable":None}, "led":{1:None, "enable":None}}
+        self.pins = {"rotate":{1:None, 2:None, 3:None, "enable":False}, "shoulder":{1:None, 2:None, 3:None, "enable":False}, "elbow":{1:None, 2:None, 3:None, "enable":False}, "wrist":{1:None, 2:None, 3:None, "enable":False}, "claw":{1:None, 2:None, 3:None, "enable":False}, "led":{1:None, "enable":False}}
 
 class CustomQCheckBox(QCheckBox):
     def __init__(self,text, font=font):
@@ -37,12 +37,14 @@ class CustomQComboBox(QComboBox):
         self.setFont(font)
 
 class ConfigWindow(QScrollArea):
-    def __init__(self, pins, logger, windowWidth = 450, windowHeight = 600):
+    def __init__(self, pins, logger, robotArmControl, windowWidth = 450, windowHeight = 600):
         super().__init__()
 
         self.logger = logger
 
         self.pins = pins
+
+        self.robotArmControl = robotArmControl
 
         #Set the window sizes
         self.setMinimumHeight(windowHeight)
@@ -279,7 +281,8 @@ class ConfigWindow(QScrollArea):
         # Set the pins in the pin object to the original value
         for pinType in self.pins.pins:
             for pin in self.pins.pins[pinType]:
-                self.pins.pins[pinType][pin] = pinChoices[0]
+                if pin != "enable":
+                    self.pins.pins[pinType][pin] = pinChoices[0]
 
         # Add the signals for setting the pins
         rotatePin1Combo.textActivated.connect(lambda x: self.setPinValue(x,"rotate",1))
@@ -319,14 +322,24 @@ class ConfigWindow(QScrollArea):
         self.pins.pins[pinType][pinNumber] = arg
 
     def setEnableState(self,state, motorType):
-        self.pins.pins[motorType]["enable"] = state
+        print(type(state), state)
+        setState = None
+        if state == 0:
+            setState = False
+        elif state == 2:
+            setState = True
+        self.pins.pins[motorType]["enable"] = setState
 
     def setupGPIO(self):
-        print("Setup GPIO")
+
+        print(self.pins.pins)
+
+
+        self.robotArmControl.createGPIODevices()
 
 class MainWindow(QMainWindow):
 
-    def __init__(self, configWindow, pins, logger, windowWidth = 400, windowHeight = 700):
+    def __init__(self, configWindow, pins, logger, robotArmControl, windowWidth = 400, windowHeight = 700):
         super().__init__()
 
         # Variables to hold useful values
@@ -343,7 +356,7 @@ class MainWindow(QMainWindow):
         self.configWindow = configWindow
         self.pins = pins
 
-        #self.robotArmControl = RobotArmControl(self.pins, self.motorSpeed, self.ledBrightness, self.logger, remote=True)
+        self.robotArmControl = robotArmControl
 
         # Set the window's title
         self.setWindowTitle("Robot Arm Controller")
@@ -539,8 +552,11 @@ class CustomQApplication(QApplication):
         logger.setLevel(logging.INFO)
 
         pins = Pins()
-        configWindow = ConfigWindow(pins, logger)
-        mainWindow = MainWindow(configWindow, pins, logger)
+
+        robotArmControl = RobotArmControl(pins, 1, 1, logger, remote=True)
+
+        configWindow = ConfigWindow(pins, logger, robotArmControl)
+        mainWindow = MainWindow(configWindow, pins, logger, robotArmControl)
 
         self.exec()
 

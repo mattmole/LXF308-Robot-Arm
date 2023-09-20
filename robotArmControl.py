@@ -30,18 +30,34 @@ class RobotArmControl():
         self.led = None
 
         print("Remote: ", self.remote)
-        if self.raspberryPi or self.remote == True:
+        #if self.raspberryPi or self.remote == True:
+        #    self.createGPIODevices()   
+        if self.raspberryPi:
+            self.logger.info("You are running on a Raspberry Pi.")
+        elif not self.raspberryPi:
+            self.logger.info("You are not running on a Raspberry Pi.")
+        if self.remote:
+            self.logger.info("You are connecting to remote GPIO. Hardware pins will be used")
+        else:
+            self.logger.info("Remote GPIO is not configured")
 
+    # Generate the GPIO objects
+    def createGPIODevices(self):
+        if self.raspberryPi or self.remote == True:
             motorTypesList = ["claw","shoulder","elbow","wrist","rotate"]
             for motorType in motorTypesList:
+                if self.pins.pins[motorType]["enable"] and motorType in self.motorObjects:
+                    self.logger.info(f"Destroying existing GPIO and creating new: {motorType}")
+                    self.closeGPIO(motorType)
                 if self.pins.pins[motorType]["enable"] and self.pins.pins[motorType][1] != None and self.pins.pins[motorType][2] != None and self.pins.pins[motorType][3] != None:
                     self.motorObjects[motorType] = Motor(self.pins.pins[motorType][1],self.pins.pins[motorType][2],pwm=True,enable=self.pins.pins[motorType][3])
+                    print(self.motorObjects[motorType][0].pin)
+                    pass
+            if self.pins.pins["led"]["enable"] and self.led != None:
+                self.logger.info("Destroying existing GPIO for LED and creating new")
+                self.closeGPIO("led")
             if self.pins.pins["led"]["enable"]:           
                 self.led = PWMLED(self.pins.pins["led"][1])
-        if not self.raspberryPi:
-            self.logger.info("You are not running on a Raspberry Pi. Real hardware interaction will be disabled")
-        else:
-            self.logger.info("You are running on a Raspberry Pi. Hardware pins will be used")
 
     # Determine if the code is running on a Raspberry Pi
     def isRaspberryPi(self):
@@ -92,12 +108,11 @@ class RobotArmControl():
         if (self.raspberryPi or self.remote) and self.pins.pins["led"]["enable"]:
             self.led.off()
 
-    def closeGPIO(self):
-        for motorType in self.pins.pins:
-            if self.pins.pins[motorType]["enable"]:
-                if motorType in self.motorObjects:
-                    self.motorObjects[motorType].close()
-            if self.pins.pins["led"]["enable"]:
+    def closeGPIO(self, outputType):
+        if self.pins.pins[outputType]["enable"]:
+            if outputType in self.motorObjects and outputType != "led":
+                self.motorObjects[outputType].close()
+            if outputType == "led" and self.pins.pins["led"]["enable"]:
                 self.led.close()
 
 if __name__ == "__main__":
@@ -118,7 +133,8 @@ if __name__ == "__main__":
     logger.setLevel(logging.INFO)
     
     a = RobotArmControl(pins,1,1, logger = logger, remote=True)
-
+    a.createGPIODevices()
+    a.createGPIODevices()
     while 1:
         char = input()
 
@@ -146,5 +162,5 @@ if __name__ == "__main__":
         elif char == "o":
             a.stopLed()
         elif char == "q":
-            a.closeGPIO()
+            #a.closeGPIO()
             sys.exit()
