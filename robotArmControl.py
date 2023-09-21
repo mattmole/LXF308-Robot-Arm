@@ -17,8 +17,8 @@ class RobotArmControl():
         self.remote = remote
         self.remoteIP = remoteIP
 
-        self.factory = PiGPIOFactory(host=self.remoteIP)
         if self.remote:
+            self.factory = PiGPIOFactory(host=self.remoteIP)
             Device.pin_factory = self.factory
 
         self.pins = pins
@@ -132,8 +132,7 @@ if __name__ == "__main__":
     # Setting the threshold of logger to INFO
     logger.setLevel(logging.INFO)
     
-    a = RobotArmControl(pins,1,1, logger = logger, remote=True)
-    a.createGPIODevices()
+    a = RobotArmControl(pins,1,1, logger = logger, remote=False)
     a.createGPIODevices()
     while 1:
         char = input()
@@ -162,5 +161,4 @@ if __name__ == "__main__":
         elif char == "o":
             a.stopLed()
         elif char == "q":
-            #a.closeGPIO()
             sys.exit()

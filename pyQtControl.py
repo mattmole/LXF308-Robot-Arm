@@ -553,7 +553,7 @@ class CustomQApplication(QApplication):
 
         pins = Pins()
 
-        robotArmControl = RobotArmControl(pins, 1, 1, logger, remote=True)
+        robotArmControl = RobotArmControl(pins, 1, 1, logger, remote=False)
 
         configWindow = ConfigWindow(pins, logger, robotArmControl)
         mainWindow = MainWindow(configWindow, pins, logger, robotArmControl)
