@@ -1,42 +1,62 @@
-from gpiozero import Motor, PWMLED, Device
-from gpiozero.pins.pigpio import PiGPIOFactory
-import time
+from robotArmControl import RobotArmControl
+import logging
 import sys
 
-factory = PiGPIOFactory(host='192.168.1.61')
-Device.pin_factory = factory
+class Pins():
+    def __init__(self):
+        self.pins = {}
+        self.pins["rotate"] = {1:None, 2:None, 3:None, "enable":False}
+        self.pins["shoulder"] = {1:None, 2:None, 3:None, "enable":False}
+        self.pins["elbow"] = {1:None, 2:None, 3:None, "enable":False}
+        self.pins["wrist"] = {1:None, 2:None, 3:None, "enable":False}
+        self.pins["claw"] = {1:None, 2:None, 3:None, "enable":False}
+        self.pins["led"] = {1:None, "enable":False}
 
-ledPin = "GPIO17"
-motorPin1 = "GPIO2"
-motorPin2 = "GPIO3"
-motorPin3 = "GPIO4"
-motorSpeed = 1
+if __name__ == "__main__":
+    logging.basicConfig(format='%(asctime)s %(message)s')    
+    
+    pins = Pins()
+    pins.pins["led"][1] = "GPIO17"
+    pins.pins["led"]["enable"] = True
+    pins.pins["claw"][1] = "GPIO2"
+    pins.pins["claw"][2] = "GPIO3"
+    pins.pins["claw"][3] = "GPIO4"
+    pins.pins["claw"]["enable"] = True
 
-led = PWMLED(ledPin)
-motor = Motor(motorPin1, motorPin2, motorPin3, pwm=True)
+    # Creating an object for logging
+    logger = logging.getLogger()
+ 
+    # Setting the threshold of logger to INFO
+    logger.setLevel(logging.INFO)
+    
+    # Create
+    a = RobotArmControl(pins,1,1, logger = logger, remote=False)
+    a.createGPIODevices()
+    while 1:
+        char = input()
 
-while 1:
-    char = input()
-
-    if char == "1":
-        motorSpeed = 0.3333
-    elif char == "2":
-        motorSpeed = 0.6666
-    elif char == "3":
-        motorSpeed = 0.9999
-    elif char=="4":
-        led.value = 0.1111
-    elif char == "5":
-        led.value = 0.33333
-    elif char == "6":
-        led.value = 0.66666
-    elif char == "7":
-        led.value = 0.9999
-    elif char == "o":
-        led.off()
-    elif char == "f":
-        motor.forward()
-    elif char == "b":
-        motor.backward()
-    elif char == "q":
-        sys.exit()
+        if char == "f":
+            a.driveMotor("claw","retract")
+        elif char == "b":
+            a.driveMotor("claw","extend")
+        elif char == "s":
+            a.stopMotor("claw")
+        elif char == "1":
+            a.motorSpeed = 0.3333
+        elif char == "2":
+            a.motorSpeed = 0.6666
+        elif char == "3":
+            a.motorSpeed = 0.9999
+        elif char == "4":
+            a.ledBrightness = 0.3333
+            a.controlLedBrightness()
+        elif char == "5":
+            a.ledBrightness = 0.6666
+            a.controlLedBrightness()
+        elif char == "6":
+            a.ledBrightness = 0.9999
+            a.controlLedBrightness()
+        elif char == "o":
+            a.stopLed()
+        elif char == "q":
+            sys.exit()

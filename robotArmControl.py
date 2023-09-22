@@ -5,7 +5,13 @@ import sys
 
 class Pins():
     def __init__(self):
-        self.pins = {"rotate":{1:None, 2:None, 3:None, "enable":None}, "shoulder":{1:None, 2:None, 3:None, "enable":None}, "elbow":{1:None, 2:None, 3:None, "enable":None}, "wrist":{1:None, 2:None, 3:None, "enable":None}, "claw":{1:None, 2:None, 3:None, "enable":None}, "led":{1:None, "enable":None}}
+        self.pins = {}
+        self.pins["rotate"] = {1:None, 2:None, 3:None, "enable":False}
+        self.pins["shoulder"] = {1:None, 2:None, 3:None, "enable":False}
+        self.pins["elbow"] = {1:None, 2:None, 3:None, "enable":False}
+        self.pins["wrist"] = {1:None, 2:None, 3:None, "enable":False}
+        self.pins["claw"] = {1:None, 2:None, 3:None, "enable":False}
+        self.pins["led"] = {1:None, "enable":False}
 
 class RobotArmControl():
 
@@ -16,10 +22,7 @@ class RobotArmControl():
 
         self.remote = remote
         self.remoteIP = remoteIP
-
-        if self.remote:
-            self.factory = PiGPIOFactory(host=self.remoteIP)
-            Device.pin_factory = self.factory
+        self.factory = None
 
         self.pins = pins
         self.motorSpeed = motorSpeed
@@ -43,6 +46,12 @@ class RobotArmControl():
 
     # Generate the GPIO objects
     def createGPIODevices(self):
+        if self.remote and self.factory == None:
+            try:
+                self.factory = PiGPIOFactory(host=self.remoteIP)
+                Device.pin_factory = self.factory
+            except IOError:
+                return False
         if self.raspberryPi or self.remote == True:
             motorTypesList = ["claw","shoulder","elbow","wrist","rotate"]
             for motorType in motorTypesList:
@@ -58,7 +67,7 @@ class RobotArmControl():
                 self.closeGPIO("led")
             if self.pins.pins["led"]["enable"]:           
                 self.led = PWMLED(self.pins.pins["led"][1])
-
+        return True
     # Determine if the code is running on a Raspberry Pi
     def isRaspberryPi(self):
         try:

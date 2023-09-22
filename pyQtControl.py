@@ -1,4 +1,4 @@
-from PyQt6.QtWidgets import QApplication, QMainWindow, QPushButton, QHBoxLayout, QVBoxLayout, QWidget, QLabel, QMenu, QSlider, QComboBox, QScrollArea, QLineEdit, QCheckBox
+from PyQt6.QtWidgets import QApplication, QMainWindow, QPushButton, QHBoxLayout, QVBoxLayout, QWidget, QLabel, QMenu, QSlider, QComboBox, QScrollArea, QLineEdit, QCheckBox, QMessageBox
 from PyQt6.QtGui import QFont
 from PyQt6.QtCore import Qt
 from rich import print
@@ -9,7 +9,22 @@ font = QFont("Arial", 14)
 
 class Pins():
     def __init__(self):
-        self.pins = {"rotate":{1:None, 2:None, 3:None, "enable":False}, "shoulder":{1:None, 2:None, 3:None, "enable":False}, "elbow":{1:None, 2:None, 3:None, "enable":False}, "wrist":{1:None, 2:None, 3:None, "enable":False}, "claw":{1:None, 2:None, 3:None, "enable":False}, "led":{1:None, "enable":False}}
+        self.pins = {}
+        self.pins["rotate"] = {1:None, 2:None, 3:None, "enable":False}
+        self.pins["shoulder"] = {1:None, 2:None, 3:None, "enable":False}
+        self.pins["elbow"] = {1:None, 2:None, 3:None, "enable":False}
+        self.pins["wrist"] = {1:None, 2:None, 3:None, "enable":False}
+        self.pins["claw"] = {1:None, 2:None, 3:None, "enable":False}
+        self.pins["led"] = {1:None, "enable":False}
+
+class CustomQMessageBox(QMessageBox):
+    def __init__(self, title, text, font=font):
+        super().__init__()
+        self.setFont(font)
+        self.setWindowTitle(title)
+        self.setText(text)
+        self.exec()
+
 
 class CustomQCheckBox(QCheckBox):
     def __init__(self,text, font=font):
@@ -239,15 +254,15 @@ class ConfigWindow(QScrollArea):
         remoteGPIOLabel = CustomQLabel("Define whether to use Remote GPIO or not")
         remoteGPIOEnableLabel = CustomQLabel("Enable remote GPIO?")
         remoteGPIOIPLabel = CustomQLabel("Enter server IP Address")
-        remoteGPIOEnableCombo = CustomQComboBox()
-        remoteGPIOEnableCombo.addItems(["Yes","No"])
-        remoteGPIOIP = CustomQLineEdit("")
+        self.remoteGPIOEnableCombo = CustomQComboBox()
+        self.remoteGPIOEnableCombo.addItems(["Yes","No"])
+        self.remoteGPIOIP = CustomQLineEdit("")
         remoteEnableVLayout = QVBoxLayout()
         remoteIPVLayout = QVBoxLayout()
         remoteEnableVLayout.addWidget(remoteGPIOEnableLabel)
-        remoteEnableVLayout.addWidget(remoteGPIOEnableCombo)
+        remoteEnableVLayout.addWidget(self.remoteGPIOEnableCombo)
         remoteIPVLayout.addWidget(remoteGPIOIPLabel)
-        remoteIPVLayout.addWidget(remoteGPIOIP)
+        remoteIPVLayout.addWidget(self.remoteGPIOIP)
         remoteHLayout = QHBoxLayout()
         remoteHLayout.addLayout(remoteEnableVLayout)
         remoteHLayout.addLayout(remoteIPVLayout)
@@ -322,7 +337,6 @@ class ConfigWindow(QScrollArea):
         self.pins.pins[pinType][pinNumber] = arg
 
     def setEnableState(self,state, motorType):
-        print(type(state), state)
         setState = None
         if state == 0:
             setState = False
@@ -331,11 +345,18 @@ class ConfigWindow(QScrollArea):
         self.pins.pins[motorType]["enable"] = setState
 
     def setupGPIO(self):
+        if self.remoteGPIOEnableCombo.currentText() == "Yes":
+            self.robotArmControl.remote = True
+            self.robotArmControl.remoteIP = self.remoteGPIOIP.text()
+        else:
+            self.robotArmControl.remote = False
+            
+        connect = self.robotArmControl.createGPIODevices()
 
-        print(self.pins.pins)
-
-
-        self.robotArmControl.createGPIODevices()
+        if connect == True:
+            messageBox = CustomQMessageBox("Connected", "Successfully connected.")
+        else:
+            messageBox = CustomQMessageBox("Connection Error", "Error connecting to the remote Raspberry Pi")
 
 class MainWindow(QMainWindow):
 
