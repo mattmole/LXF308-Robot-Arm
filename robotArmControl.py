@@ -4,6 +4,7 @@ import logging
 import sys
 
 class Pins():
+    """Class used to store details of the pins used for motor / LED control"""
     def __init__(self):
         self.pins = {}
         self.pins["rotate"] = {1:None, 2:None, 3:None, "enable":False}
@@ -14,9 +15,9 @@ class Pins():
         self.pins["led"] = {1:None, "enable":False}
 
 class RobotArmControl():
-
-    # Initialise the class and set some instance variables
-    def __init__(self,pins,motorSpeed,ledBrightness, logger, remote=False, remoteIP = "192.168.1.61"):
+    """Class used to interact with GPIO pins and can connect to a remote device as well"""
+    def __init__(self,pins,motorSpeed,ledBrightness, logger, remote=False, remoteIP = ""):
+        # Variables used to allow instance-wide access
         self.logger = logger
         self.raspberryPi = self.isRaspberryPi()
 
@@ -28,13 +29,11 @@ class RobotArmControl():
         self.motorSpeed = motorSpeed
         self.ledBrightness = ledBrightness
 
+        # Dictionary used to store all motor objects and a variable to store the LED object 
         self.motorObjects = {}
-        self.motorSpeedObjects = {}
         self.led = None
 
-        print("Remote: ", self.remote)
-        #if self.raspberryPi or self.remote == True:
-        #    self.createGPIODevices()   
+        # Print some messages to show information
         if self.raspberryPi:
             self.logger.info("You are running on a Raspberry Pi.")
         elif not self.raspberryPi:
@@ -44,32 +43,37 @@ class RobotArmControl():
         else:
             self.logger.info("Remote GPIO is not configured")
 
-    # Generate the GPIO objects
     def createGPIODevices(self):
+        """Generate the GPIO objects"""
+        # Connect to remote pins if this is configured
         if self.remote and self.factory == None:
             try:
                 self.factory = PiGPIOFactory(host=self.remoteIP)
                 Device.pin_factory = self.factory
             except IOError:
                 return False
+        # Generate motor objects for each defined motor
         if self.raspberryPi or self.remote == True:
             motorTypesList = ["claw","shoulder","elbow","wrist","rotate"]
             for motorType in motorTypesList:
+                # Close the GPIO if already defined
                 if self.pins.pins[motorType]["enable"] and motorType in self.motorObjects:
                     self.logger.info(f"Destroying existing GPIO and creating new: {motorType}")
                     self.closeGPIO(motorType)
+                # Create the objects for control
                 if self.pins.pins[motorType]["enable"] and self.pins.pins[motorType][1] != None and self.pins.pins[motorType][2] != None and self.pins.pins[motorType][3] != None:
                     self.motorObjects[motorType] = Motor(self.pins.pins[motorType][1],self.pins.pins[motorType][2],pwm=True,enable=self.pins.pins[motorType][3])
-                    print(self.motorObjects[motorType][0].pin)
-                    pass
+            # Close the PWMLED object if already defined
             if self.pins.pins["led"]["enable"] and self.led != None:
                 self.logger.info("Destroying existing GPIO for LED and creating new")
                 self.closeGPIO("led")
+            # Create the PWMLED object
             if self.pins.pins["led"]["enable"]:           
                 self.led = PWMLED(self.pins.pins["led"][1])
         return True
-    # Determine if the code is running on a Raspberry Pi
+    
     def isRaspberryPi(self):
+        """Determine if the code is running on a Raspberry Pi"""
         try:
             with open('/sys/firmware/devicetree/base/model', 'r') as m:
                 if 'raspberry pi' in m.read().lower(): 
@@ -78,10 +82,11 @@ class RobotArmControl():
             pass
         return False
     
-    # Function to drive a motor, with the type defined by the previous functions
     def driveMotor(self,motorType, direction):
+        """Function to drive a motor, with the type defined by the previous function"""
         self.logger.info(f"Drive motor function called for {motorType} motor, with direction {direction}")
 
+        # Use some conditions to determine whether to write to GPIO pins or to simulate
         if (self.raspberryPi or self.remote) and self.pins.pins[motorType]["enable"]:
             motor = self.motorObjects[motorType]
         
@@ -93,8 +98,8 @@ class RobotArmControl():
         elif not self.pins.pins[motorType]["enable"]:
             self.logger.info("Motor was not enabled")
 
-    # A function to stop the motor
     def stopMotor(self,motorType):
+        """A function to stop the motor"""
         self.logger.info(f"Stop motor function called for {motorType} motor")
         if (self.raspberryPi or self.remote) and self.pins.pins[motorType]["enable"]:
             motor = self.motorObjects[motorType]
@@ -102,8 +107,8 @@ class RobotArmControl():
         elif not self.pins.pins[motorType]["enable"]:
             self.logger.info("Motor not enabled")
         
-    # A function to control the brightness of the LED
     def controlLedBrightness(self):
+        """A function to control the brightness of the LED"""
         self.logger.info(f"Control LED function called for LED, with brightness {self.ledBrightness}")
         
         if (self.raspberryPi or self.remote) and self.pins.pins["led"]["enable"]:
@@ -111,18 +116,29 @@ class RobotArmControl():
                 self.led.on()
             self.led.value = self.ledBrightness
         
-    # A function to switch off the LED
     def stopLed(self):
+        """A function to switch off the LED"""
         self.logger.info("Stop LED function called")
         if (self.raspberryPi or self.remote) and self.pins.pins["led"]["enable"]:
             self.led.off()
 
     def closeGPIO(self, outputType):
+        """A function to close a GPIO device"""
         if self.pins.pins[outputType]["enable"]:
             if outputType in self.motorObjects and outputType != "led":
                 self.motorObjects[outputType].close()
             if outputType == "led" and self.pins.pins["led"]["enable"]:
                 self.led.close()
+
+    def closeAllGPIO(self):
+        """A function to close all GPIO objects"""
+        if self.pins.pins["led"]["enable"] and self.led != None:
+            self.led.close()
+        motorTypesList = ["claw","shoulder","elbow","wrist","rotate"]
+        for motorType in motorTypesList:
+            # Close the GPIO if already defined
+            if self.pins.pins[motorType]["enable"] and motorType in self.motorObjects:
+                self.motorObjects[motorType].close()
 
 if __name__ == "__main__":
     logging.basicConfig(format='%(asctime)s %(message)s')    
@@ -170,4 +186,5 @@ if __name__ == "__main__":
         elif char == "o":
             a.stopLed()
         elif char == "q":
+            a.closeAllGPIO()
             sys.exit()
