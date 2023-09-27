@@ -514,10 +514,10 @@ class MainWindow(QMainWindow):
         extendWristButton.released.connect(lambda: self.buttonReleased("wrist", "extend"))
         retractWristButton.pressed.connect(lambda: self.buttonPressed("wrist","retract"))
         retractWristButton.released.connect(lambda: self.buttonReleased("wrist","retract"))
-        openClawButton.pressed.connect(lambda: self.buttonPressed("claw", "open"))
-        openClawButton.released.connect(lambda: self.buttonReleased("claw", "open"))
-        closeClawButton.pressed.connect(lambda: self.buttonPressed("claw","close"))
-        closeClawButton.released.connect(lambda: self.buttonReleased("claw","close"))
+        openClawButton.pressed.connect(lambda: self.buttonPressed("claw", "retract"))
+        openClawButton.released.connect(lambda: self.buttonReleased("claw", "retract"))
+        closeClawButton.pressed.connect(lambda: self.buttonPressed("claw","extend"))
+        closeClawButton.released.connect(lambda: self.buttonReleased("claw","extend"))
         ledButton.toggled.connect(self.ledButtonPressed)
 
     # Slot used when window is closed

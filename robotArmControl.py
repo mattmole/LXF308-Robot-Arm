@@ -141,8 +141,10 @@ class RobotArmControl():
                 self.motorObjects[motorType].close()
 
 if __name__ == "__main__":
+    # Create a logger object
     logging.basicConfig(format='%(asctime)s %(message)s')    
     
+    # Create a Pins object
     pins = Pins()
     pins.pins["led"][1] = "GPIO17"
     pins.pins["led"]["enable"] = True
@@ -151,17 +153,20 @@ if __name__ == "__main__":
     pins.pins["claw"][3] = "GPIO4"
     pins.pins["claw"]["enable"] = True
 
-    # Creating an object
+    # Configure the logger
     logger = logging.getLogger()
- 
-    # Setting the threshold of logger to INFO
     logger.setLevel(logging.INFO)
-    
-    a = RobotArmControl(pins,1,1, logger = logger, remote=False)
+
+    # Create an object to control the hardware and create the necessary motor / LED objects    
+    a = RobotArmControl(pins,1,1, logger = logger, remote=True, remoteIP="192.168.1.61")
     a.createGPIODevices()
+
+    # Start an infinite loop
     while 1:
+        # Request a character
         char = input()
 
+        #Operate the relevant motors / speeds / LEDs based on the key that has been pressed
         if char == "f":
             a.driveMotor("claw","retract")
         elif char == "b":
