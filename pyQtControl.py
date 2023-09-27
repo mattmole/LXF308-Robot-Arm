@@ -5,9 +5,11 @@ from rich import print
 from robotArmControl import RobotArmControl
 import logging
 
+# Create a font object to pass into each sub-classed QWidget type
 font = QFont("Arial", 14)
 
 class Pins():
+    """Class used to store Pin details for motors / LED"""
     def __init__(self):
         self.pins = {}
         self.pins["rotate"] = {1:None, 2:None, 3:None, "enable":False}
@@ -18,6 +20,7 @@ class Pins():
         self.pins["led"] = {1:None, "enable":False}
 
 class CustomQMessageBox(QMessageBox):
+    """Custom message box with custom font set"""
     def __init__(self, title, text, font=font):
         super().__init__()
         self.setFont(font)
@@ -27,38 +30,43 @@ class CustomQMessageBox(QMessageBox):
 
 
 class CustomQCheckBox(QCheckBox):
+    """Custom checkbox with custom font set"""
     def __init__(self,text, font=font):
         super().__init__(text)
         self.setFont(font)
 
 class CustomQLineEdit(QLineEdit):
+    """Custom single line text widget with custom font set"""
     def __init__(self, text, font = font):
         super().__init__(text)
         self.setFont(font)
 
 class CustomQLabel(QLabel):
+    """Custom label with custom font set"""
     def __init__(self,text,font = font):
         super().__init__(text)
         self.setFont(font)
 
 class CustomQPushButton(QPushButton):
+    """Custom push button with custom font set"""
     def __init__(self,text,font = font):
         super().__init__(text)
         self.setFont(font)
 
 class CustomQComboBox(QComboBox):
+    """Custom combo box with custom font set"""
     def __init__(self, font=font):
         super().__init__()
         self.setFont(font)
 
 class ConfigWindow(QScrollArea):
+    """Config Window class, which inherits from a scroll area. The content within can scroll if it is larger than the window size"""
     def __init__(self, pins, logger, robotArmControl, windowWidth = 450, windowHeight = 600):
         super().__init__()
 
+        # Instance variables to store details passed in when instantiating the class
         self.logger = logger
-
         self.pins = pins
-
         self.robotArmControl = robotArmControl
 
         #Set the window sizes
@@ -201,7 +209,6 @@ class ConfigWindow(QScrollArea):
         clawHLayout.addLayout(clawVLayout2)
         clawHLayout.addLayout(clawVLayout3)
 
-
         # Objects for defining rotate motor pins
         rotatePinsLabel = CustomQLabel("Define pins used for the rotate motor")
         rotateEnableLabel = CustomQLabel("Enable")
@@ -269,6 +276,7 @@ class ConfigWindow(QScrollArea):
 
         setupGPIOButton = CustomQPushButton("Setup GPIO")
 
+        # Add these various objects to a layout that can then be added to the window
         vLayout = QVBoxLayout()
         vLayout.addWidget(rotatePinsLabel)
         vLayout.addLayout(rotateHLayout)
@@ -299,7 +307,7 @@ class ConfigWindow(QScrollArea):
                 if pin != "enable":
                     self.pins.pins[pinType][pin] = pinChoices[0]
 
-        # Add the signals for setting the pins
+        # Add the signals for setting the pins. When button are pushed, functions are called
         rotatePin1Combo.textActivated.connect(lambda x: self.setPinValue(x,"rotate",1))
         rotatePin2Combo.textActivated.connect(lambda x: self.setPinValue(x,"rotate",2))
         rotatePin3Combo.textActivated.connect(lambda x: self.setPinValue(x,"rotate",3))
@@ -316,19 +324,16 @@ class ConfigWindow(QScrollArea):
         clawPin2Combo.textActivated.connect(lambda x: self.setPinValue(x,"claw",2))
         clawPin3Combo.textActivated.connect(lambda x: self.setPinValue(x,"claw",3))
         ledPinCombo.textActivated.connect(lambda x: self.setPinValue(x,"led",1))
-
         shoulderEnableCheck.stateChanged.connect(lambda x: self.setEnableState(x,"shoulder"))
         elbowEnableCheck.stateChanged.connect(lambda x: self.setEnableState(x,"elbow"))
         wristEnableCheck.stateChanged.connect(lambda x: self.setEnableState(x,"wrist"))
         clawEnableCheck.stateChanged.connect(lambda x: self.setEnableState(x,"claw"))
         rotateEnableCheck.stateChanged.connect(lambda x: self.setEnableState(x,"rotate"))
         ledEnableCheck.stateChanged.connect(lambda x: self.setEnableState(x,"led"))
-
         setupGPIOButton.clicked.connect(self.setupGPIO)
 
         # Create a widget, define the vLayout to it and then assign the widget to be the main widget of the main window
         widget = QWidget()
-        #self.setWidgetResizable(True)        
         widget.setLayout(vLayout)
         self.setWidget(widget)
         
@@ -336,6 +341,7 @@ class ConfigWindow(QScrollArea):
     def setPinValue(self, arg, pinType, pinNumber):
         self.pins.pins[pinType][pinNumber] = arg
 
+    # When enable buttons are pushed, set the motorType status as enabled
     def setEnableState(self,state, motorType):
         setState = None
         if state == 0:
@@ -344,6 +350,7 @@ class ConfigWindow(QScrollArea):
             setState = True
         self.pins.pins[motorType]["enable"] = setState
 
+    # When the setup GPIO button is pushed, call the function in the hardware library
     def setupGPIO(self):
         if self.remoteGPIOEnableCombo.currentText() == "Yes":
             self.robotArmControl.remote = True
@@ -353,31 +360,30 @@ class ConfigWindow(QScrollArea):
             
         connect = self.robotArmControl.createGPIODevices()
 
+        # Report if the connection is sucessful or not
         if connect == True:
             messageBox = CustomQMessageBox("Connected", "Successfully connected.")
         else:
-            messageBox = CustomQMessageBox("Connection Error", "Error connecting to the remote Raspberry Pi")
+            messageBox = CustomQMessageBox("Connection Error", "Error connecting.")
 
 class MainWindow(QMainWindow):
-
+    """Create our main window, sub-classed from the QMainWindow class"""
     def __init__(self, configWindow, pins, logger, robotArmControl, windowWidth = 400, windowHeight = 700):
         super().__init__()
 
         # Variables to hold useful values
         self.motorSpeed = 1
         self.ledBrightness = 1
+        self.logger = logger
+        self.configWindow = configWindow
+        self.pins = pins
+        self.robotArmControl = robotArmControl
 
         #Set the window sizes
         self.setMaximumHeight(windowHeight)
         self.setMaximumWidth(windowWidth)
         self.setMinimumHeight(windowHeight)
         self.setMinimumWidth(windowWidth)
-
-        self.logger = logger
-        self.configWindow = configWindow
-        self.pins = pins
-
-        self.robotArmControl = robotArmControl
 
         # Set the window's title
         self.setWindowTitle("Robot Arm Controller")
@@ -562,8 +568,10 @@ class MainWindow(QMainWindow):
         self.robotArmControl.controlLedBrightness()
 
 class CustomQApplication(QApplication):
+    """Create a class based on QApplication and define windows"""
     def __init__(self,args):
         super().__init__(args)
+        #Set logging format
         logging.basicConfig(format='%(asctime)s %(message)s')    
 
         # Creating an object
@@ -572,18 +580,20 @@ class CustomQApplication(QApplication):
         # Setting the threshold of logger to DEBUG
         logger.setLevel(logging.INFO)
 
+        # Create an instance for the pins
         pins = Pins()
 
+        # Create an object to allow hardware control 
         robotArmControl = RobotArmControl(pins, 1, 1, logger, remote=False)
 
+        # Create windows and pass in the useful objects
         configWindow = ConfigWindow(pins, logger, robotArmControl)
         mainWindow = MainWindow(configWindow, pins, logger, robotArmControl)
 
         self.exec()
 
-
+# Only run this code when the file is run directly
 if __name__ == "__main__":
     
+    # Create an instance of the custom application class
     app = CustomQApplication([])
-
-    #app.exec()
